@@ -1,11 +1,10 @@
-package me.lojosho.hibiscuscommons.nms.v1_21_R7;
+package me.lojosho.hibiscuscommons.nms.v26_2_R1;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
-import me.lojosho.hibiscuscommons.HibiscusCommonsPlugin;
 import me.lojosho.hibiscuscommons.util.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
@@ -19,8 +18,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.component.DyedItemColor;
-import org.bukkit.*;
-import org.bukkit.craftbukkit.CraftServer;
+import org.bukkit.Color;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.World;
+import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
@@ -36,12 +38,12 @@ public class NMSUtils implements me.lojosho.hibiscuscommons.nms.NMSUtils {
 
     @Override
     public int getNextEntityId(World world) {
-        return net.minecraft.world.entity.Entity.nextEntityId();
+        return ((CraftWorld) world).getHandle().getNextEntityId();
     }
 
     @Override
     public org.bukkit.entity.Entity getEntity(int entityId, World world) {
-        net.minecraft.world.entity.Entity entity = getNMSEntity(entityId);
+        net.minecraft.world.entity.Entity entity = getNMSEntity(entityId, ((CraftWorld) world).getHandle());
         if (entity == null) return null;
         return entity.getBukkitEntity();
     }
@@ -73,13 +75,8 @@ public class NMSUtils implements me.lojosho.hibiscuscommons.nms.NMSUtils {
         return CraftItemStack.asBukkitCopy(nmsStack);
     }
 
-    private net.minecraft.world.entity.Entity getNMSEntity(int entityId) {
-        for (ServerLevel world : ((CraftServer) Bukkit.getServer()).getHandle().getServer().getAllLevels()) {
-            net.minecraft.world.entity.Entity entity = world.getEntity(entityId);
-            if (entity == null) continue;
-            return entity;
-        }
-        return null;
+    private net.minecraft.world.entity.Entity getNMSEntity(int entityId, ServerLevel level) {
+        return level.getEntity(entityId);
     }
 
     @Override
