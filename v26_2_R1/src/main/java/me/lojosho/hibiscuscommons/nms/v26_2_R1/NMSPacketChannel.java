@@ -14,7 +14,9 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.item.ItemInstance;
 import net.minecraft.world.item.ItemStack;
 import org.bukkit.craftbukkit.CraftEquipmentSlot;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
@@ -68,7 +70,8 @@ public class NMSPacketChannel extends ChannelDuplexHandler {
                 slotData.add(null);
                 continue;
             }
-            bukkitItems.add(CraftItemStack.asBukkitCopy(nmsItem));
+            // Cast to ItemInstance: Paper 26.2 made asBukkitCopy(ItemStack) private, only the ItemInstance overload is public
+            bukkitItems.add(CraftItemStack.asBukkitCopy((ItemInstance) nmsItem));
         }
 
         AtomicReference<PacketAction> action = new AtomicReference<>(PacketAction.NOTHING);
@@ -101,7 +104,7 @@ public class NMSPacketChannel extends ChannelDuplexHandler {
         final int slot = packet.getSlot();
         final ItemStack item = packet.getItem();
 
-        org.bukkit.inventory.ItemStack bukkitItem = CraftItemStack.asBukkitCopy(item);
+        org.bukkit.inventory.ItemStack bukkitItem = CraftItemStack.asBukkitCopy((ItemInstance) item);
 
         AtomicReference<PacketAction> action = new AtomicReference<>(PacketAction.NOTHING);
         SlotContentWrapper wrapper = new SlotContentWrapper(windowId, slot, bukkitItem);
@@ -126,7 +129,7 @@ public class NMSPacketChannel extends ChannelDuplexHandler {
         HashMap<EquipmentSlot, org.bukkit.inventory.ItemStack> bukkitArmor = new HashMap<>();
         for (Pair<net.minecraft.world.entity.EquipmentSlot, ItemStack> piece : nmsArmor) {
             EquipmentSlot slot = CraftEquipmentSlot.getSlot(piece.getFirst());
-            org.bukkit.inventory.ItemStack itemStack = CraftItemStack.asBukkitCopy(piece.getSecond());
+            org.bukkit.inventory.ItemStack itemStack = CraftItemStack.asBukkitCopy((ItemInstance) piece.getSecond());
             bukkitArmor.put(slot, itemStack);
         }
 
@@ -218,6 +221,7 @@ public class NMSPacketChannel extends ChannelDuplexHandler {
             case ServerboundPlayerActionPacket playerActionPacket -> msg = handlePlayerAction(playerActionPacket);
             case ServerboundSwingPacket swingPacket -> msg = handlePlayerArm(swingPacket);
             case ServerboundInteractPacket interactPacket -> msg = handleInteract(interactPacket);
+            case ServerboundPlayerInputPacket inputPacket -> msg = handlePlayerInput(inputPacket);
             default -> {}
         }
 
@@ -264,6 +268,22 @@ public class NMSPacketChannel extends ChannelDuplexHandler {
         SubPlugins.getSubPlugins().forEach(plugin -> {
 
             PacketAction pluginAction = plugin.getPacketInterface().readPlayerArm(player, wrapper);
+            if (pluginAction != PacketAction.NOTHING) action.set(pluginAction);
+
+        });
+        if (action.get() == PacketAction.CANCELLED) return null;
+        return packet;
+    }
+
+    private Packet<?> handlePlayerInput(@NotNull ServerboundPlayerInputPacket packet) {
+        Input input = packet.input();
+        MessagesUtil.sendDebugMessages("ServerboundPlayerInputPacket jump=" + input.jump() + " shift=" + input.shift());
+        PlayerInputWrapper wrapper = new PlayerInputWrapper(input.forward(), input.backward(), input.left(), input.right(), input.jump(), input.shift(), input.sprint());
+
+        AtomicReference<PacketAction> action = new AtomicReference<>(PacketAction.NOTHING);
+        SubPlugins.getSubPlugins().forEach(plugin -> {
+
+            PacketAction pluginAction = plugin.getPacketInterface().readPlayerInput(player, wrapper);
             if (pluginAction != PacketAction.NOTHING) action.set(pluginAction);
 
         });

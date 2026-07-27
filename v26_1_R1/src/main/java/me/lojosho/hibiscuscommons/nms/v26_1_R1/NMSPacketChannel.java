@@ -14,6 +14,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
 import org.bukkit.craftbukkit.CraftEquipmentSlot;
@@ -218,6 +219,7 @@ public class NMSPacketChannel extends ChannelDuplexHandler {
             case ServerboundPlayerActionPacket playerActionPacket -> msg = handlePlayerAction(playerActionPacket);
             case ServerboundSwingPacket swingPacket -> msg = handlePlayerArm(swingPacket);
             case ServerboundInteractPacket interactPacket -> msg = handleInteract(interactPacket);
+            case ServerboundPlayerInputPacket inputPacket -> msg = handlePlayerInput(inputPacket);
             default -> {}
         }
 
@@ -264,6 +266,22 @@ public class NMSPacketChannel extends ChannelDuplexHandler {
         SubPlugins.getSubPlugins().forEach(plugin -> {
 
             PacketAction pluginAction = plugin.getPacketInterface().readPlayerArm(player, wrapper);
+            if (pluginAction != PacketAction.NOTHING) action.set(pluginAction);
+
+        });
+        if (action.get() == PacketAction.CANCELLED) return null;
+        return packet;
+    }
+
+    private Packet<?> handlePlayerInput(@NotNull ServerboundPlayerInputPacket packet) {
+        Input input = packet.input();
+        MessagesUtil.sendDebugMessages("ServerboundPlayerInputPacket jump=" + input.jump() + " shift=" + input.shift());
+        PlayerInputWrapper wrapper = new PlayerInputWrapper(input.forward(), input.backward(), input.left(), input.right(), input.jump(), input.shift(), input.sprint());
+
+        AtomicReference<PacketAction> action = new AtomicReference<>(PacketAction.NOTHING);
+        SubPlugins.getSubPlugins().forEach(plugin -> {
+
+            PacketAction pluginAction = plugin.getPacketInterface().readPlayerInput(player, wrapper);
             if (pluginAction != PacketAction.NOTHING) action.set(pluginAction);
 
         });

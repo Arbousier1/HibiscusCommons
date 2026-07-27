@@ -16,6 +16,7 @@ import net.minecraft.network.protocol.game.ClientboundUpdateAdvancementsPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemInstance;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.component.DyedItemColor;
 import org.bukkit.Color;
@@ -72,7 +73,8 @@ public class NMSUtils implements me.lojosho.hibiscuscommons.nms.NMSUtils {
             );
         }
         nmsStack.set(DataComponents.DYED_COLOR, new DyedItemColor(color.asRGB()));
-        return CraftItemStack.asBukkitCopy(nmsStack);
+        // Cast to ItemInstance: Paper 26.2 made asBukkitCopy(ItemStack) private, only the ItemInstance overload is public
+        return CraftItemStack.asBukkitCopy((net.minecraft.world.item.ItemInstance) nmsStack);
     }
 
     private net.minecraft.world.entity.Entity getNMSEntity(int entityId, ServerLevel level) {

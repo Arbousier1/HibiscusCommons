@@ -46,4 +46,9 @@ public interface PacketInterface {
         return PacketAction.NOTHING;
         // Override
     }
+
+    default PacketAction readPlayerInput(@NotNull Player player, @NotNull PlayerInputWrapper wrapper) {
+        return PacketAction.NOTHING;
+        // Override
+    }
 }
