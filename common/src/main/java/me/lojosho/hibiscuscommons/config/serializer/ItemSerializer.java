@@ -36,6 +36,7 @@ public class ItemSerializer implements TypeSerializer<ItemStack> {
     private static final String LORE_APPEND = "lore-append";
     private static final String LORE = "lore";
     private static final String TOOLTIP_STYLE = "tooltip-style";
+    private static final String HIDE_TOOLTIP = "hide-tooltip";
     private static final String MODEL_DATA = "model-data";
     private static final String MODEL_ID = "model-id";
     private static final String NBT_TAGS = "nbt-tag";
@@ -63,6 +64,7 @@ public class ItemSerializer implements TypeSerializer<ItemStack> {
         final ConfigurationNode loreAppendNode = source.node(LORE_APPEND);
         final ConfigurationNode loreNode = source.node(LORE);
         final ConfigurationNode toolTipStyleNode = source.node(TOOLTIP_STYLE);
+        final ConfigurationNode hideToolTipNode = source.node(HIDE_TOOLTIP);
         final ConfigurationNode modelDataNode = source.node(MODEL_DATA);
         final ConfigurationNode modelIdNode = source.node(MODEL_ID);
         final ConfigurationNode nbtNode = source.node(NBT_TAGS);
@@ -160,6 +162,10 @@ public class ItemSerializer implements TypeSerializer<ItemStack> {
         item = itemBuilder.build();
         itemMeta = item.getItemMeta();
         // A few more specific misc things
+
+        if (!hideToolTipNode.virtual() && NMSHandlers.getVersion().isHigherOrEqual(MinecraftVersion.v1_20_6)) {
+            itemMeta.setHideTooltip(hideToolTipNode.getBoolean(false));
+        }
 
         if (!itemFlagsNode.virtual()) {
             if (HibiscusCommonsPlugin.isOnPaper() && NMSHandlers.getVersion().isHigherOrEqual(MinecraftVersion.v1_20_6)) {
